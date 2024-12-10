@@ -1,31 +1,21 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { ServiceFactura, calcularTotal } from "../Services/ServiceFactura";
 import { FacturaDetalle } from "./FacturaDetalle";
 import { CompaniaView } from "./CompaniaView";
 import { ClienteView } from "./ClienteView";
 import { FacturaItemsView } from "./FacturaItemsView";
 import { TotalView } from "./TotalView";
-import {
-  Card,
-  Col,
-  Container,
-  Form,
-  ListGroup,
-  Row,
-  Button,
-} from "react-bootstrap";
+import { Button, Card, Col, Container, ListGroup, Row } from "react-bootstrap";
+import { FormuItemsFactura } from "./FormuItemsFactura";
+import { use } from "react";
 
 export const FacturaApp = () => {
   // Estados iniciales
+  const [activeForm, setActiveForm] = useState(false);
   const [facturaData, setFacturaData] = useState(null);
   const [items, setItems] = useState([]);
-  const [count, setCount] = useState(0);
   const [total, setTotal] = useState(0);
-  const [form, setForm] = useState({
-    descripcion: "",
-    cantidad: "",
-    precio: "",
-  });
+  const [count, setCount] = useState(0);
 
   // Cargar los datos iniciales de la factura al montar el componente
   useEffect(() => {
@@ -41,40 +31,21 @@ export const FacturaApp = () => {
     setTotal(calcularTotal(factura.productos));
   }, []); // Dependencias vacías: se ejecuta solo al montar el componente
 
-  // Actualizar el total cuando cambian los productos
   useEffect(() => {
     setTotal(calcularTotal(items));
   }, [items]);
 
-  // Manejo de cambios en los inputs
-  const handleImputCambio = useCallback(
-    (e) => {
-      const { name, value } = e.target;
-      setForm({ ...form, [name]: value });
-    },
-    [form]
-  );
-
-  // Agregar un nuevo producto
-  const handleAgregarProducto = (e) => {
-    e.preventDefault();
-
-    if (!form.descripcion || form.cantidad <= 0 || form.precio <= 0) {
-      alert("Por favor completa todos los campos con valores válidos.");
-      return;
-    }
-
+  const handleAgregarProducto = ({ descripcion, cantidad, precio }) => {
     const nuevoId = count + 1;
     setCount(nuevoId);
 
     const nuevoProducto = {
       id: nuevoId,
-      descripcion: form.descripcion,
-      cantidad: parseInt(form.cantidad, 10),
-      precio: parseFloat(form.precio),
+      descripcion: descripcion,
+      cantidad: parseInt(cantidad, 10),
+      precio: parseFloat(precio),
     };
     setItems([...items, nuevoProducto]);
-    setForm({ descripcion: "", cantidad: "", precio: "" });
   };
 
   if (!facturaData) {
@@ -113,41 +84,10 @@ export const FacturaApp = () => {
 
           {/* Formulario para agregar productos */}
           <h3>Agregar Producto</h3>
-          <Form onSubmit={handleAgregarProducto}>
-            <Form.Group>
-              <Form.Label>Producto</Form.Label>
-              <Form.Control
-                type="text"
-                name="descripcion"
-                placeholder="Descripción"
-                value={form.descripcion}
-                onChange={handleImputCambio}
-              />
-            </Form.Group>
-            <Form.Group>
-              <Form.Label>Cantidad</Form.Label>
-              <Form.Control
-                type="number"
-                name="cantidad"
-                placeholder="Cantidad"
-                value={form.cantidad}
-                onChange={handleImputCambio}
-              />
-            </Form.Group>
-            <Form.Group>
-              <Form.Label>Precio</Form.Label>
-              <Form.Control
-                type="number"
-                name="precio"
-                placeholder="Precio"
-                value={form.precio}
-                onChange={handleImputCambio}
-              />
-            </Form.Group>
-            <Button type="submit" variant="primary" className="mt-3">
-              Agregar Producto
-            </Button>
-          </Form>
+          <Button onClick={() => setActiveForm(!activeForm)}>
+            {!activeForm ? "Agregar Item" : "Cerrar Formulario"}
+          </Button>
+          {!activeForm || <FormuItemsFactura handler={handleAgregarProducto} />}
         </Card.Body>
       </Card>
     </Container>
