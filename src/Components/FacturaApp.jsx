@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { ServiceFactura } from "../Services/ServiceFactura";
+import { useState, useEffect, useCallback } from "react";
+import { ServiceFactura, calcularTotal } from "../Services/ServiceFactura";
 import { FacturaDetalle } from "./FacturaDetalle";
 import { CompaniaView } from "./CompaniaView";
 import { ClienteView } from "./ClienteView";
@@ -16,48 +16,57 @@ import {
 } from "react-bootstrap";
 
 export const FacturaApp = () => {
-  // Desestructuración de datos del servicio
-  const { id, nombre, fecha, cliente, compania, productos, total } =
-    ServiceFactura();
-
-  // useState para manejar los estados de los componentes
-  const [items, setItems] = useState(productos || []);
-  
-  const [count, setCount] = useState(
-    productos.length > 0 ? Math.max(...productos.map((p) => p.id)) : 1
-  );
-  const [totalSubmit, setTotalSubmit] = useState(total || 0);
+  // Estados iniciales
+  const [facturaData, setFacturaData] = useState(null);
+  const [items, setItems] = useState([]);
+  const [count, setCount] = useState(0);
+  const [total, setTotal] = useState(0);
   const [form, setForm] = useState({
     descripcion: "",
     cantidad: "",
     precio: "",
   });
 
-  // Manejo de cambios en los imputs
-  // se usa useCallback porque es una función que se renderiza constantemente
+  // Cargar los datos iniciales de la factura al montar el componente
+  useEffect(() => {
+    const factura = ServiceFactura();
+    // Cargar los datos de la factura
+    setFacturaData(factura);
+    setItems(factura.productos || []);
+    setCount(
+      factura.productos.length > 0
+        ? Math.max(...factura.productos.map((p) => p.id))
+        : 0
+    );
+    setTotal(calcularTotal(factura.productos));
+  }, []); // Dependencias vacías: se ejecuta solo al montar el componente
+
+  // Actualizar el total cuando cambian los productos
+  useEffect(() => {
+    setTotal(calcularTotal(items));
+  }, [items]);
+
+  // Manejo de cambios en los inputs
   const handleImputCambio = useCallback(
     (e) => {
-      //e.target, se usa para acceder a los datos del imput
       const { name, value } = e.target;
       setForm({ ...form, [name]: value });
     },
     [form]
   );
 
-  // handle(manejador) para validar el formulario y agregar un nuevo producto
+  // Agregar un nuevo producto
   const handleAgregarProducto = (e) => {
     e.preventDefault();
 
-    // Validar los campos del formulario
     if (!form.descripcion || form.cantidad <= 0 || form.precio <= 0) {
       alert("Por favor completa todos los campos con valores válidos.");
       return;
     }
-    // Calcular el nuevo ID
+
     const nuevoId = count + 1;
     setCount(nuevoId);
 
-    // Crear un nuevo producto y actualizar el estado
     const nuevoProducto = {
       id: nuevoId,
       descripcion: form.descripcion,
@@ -65,13 +74,14 @@ export const FacturaApp = () => {
       precio: parseFloat(form.precio),
     };
     setItems([...items, nuevoProducto]);
-
-    // Calcular el nuevo total
-    setTotalSubmit(totalSubmit + nuevoProducto.precio * nuevoProducto.cantidad);
-
-    // Limpiar el formulario
     setForm({ descripcion: "", cantidad: "", precio: "" });
   };
+
+  if (!facturaData) {
+    return <div>Cargando...</div>; // Mostrar un mensaje mientras se cargan los datos
+  }
+
+  const { id, nombre, fecha, cliente, compania } = facturaData;
 
   return (
     <Container>
@@ -99,7 +109,7 @@ export const FacturaApp = () => {
 
           <h2>Productos</h2>
           <FacturaItemsView productos={items} />
-          <TotalView total={totalSubmit} />
+          <TotalView total={total} />
 
           {/* Formulario para agregar productos */}
           <h3>Agregar Producto</h3>
