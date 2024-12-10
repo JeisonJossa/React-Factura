@@ -1,4 +1,5 @@
 import { ListGroup } from "react-bootstrap";
+import PropTypes from "prop-types";
 export const FacturaDetalle = ({ id, nombre, fecha }) => {
   return (
     <>
@@ -9,4 +10,9 @@ export const FacturaDetalle = ({ id, nombre, fecha }) => {
       </ListGroup>
     </>
   );
+};
+FacturaDetalle.propTypes = {
+  id: PropTypes.number.isRequired,
+  nombre: PropTypes.string.isRequired,
+  fecha: PropTypes.string.isRequired,
 };
